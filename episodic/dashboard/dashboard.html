@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Episodic Context Store Dashboard</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-50: #f0f9ff;
+            --primary-100: #e0f2fe;
+            --primary-500: #0ea5e9;
+            --primary-600: #0284c7;
+            --primary-700: #0369a1;
+            --primary-900: #0c4a6e;
+            
+            --gray-50: #f8fafc;
+            --gray-100: #f1f5f9;
+            --gray-200: #e2e8f0;
+            --gray-300: #cbd5e1;
+            --gray-400: #94a3b8;
+            --gray-500: #64748b;
+            --gray-600: #475569;
+            --gray-700: #334155;
+            --gray-800: #1e293b;
+            --gray-900: #0f172a;
+            
+            --green-50: #f0fdf4;
+            --green-500: #22c55e;
+            --green-600: #16a34a;
+            
+            --orange-50: #fff7ed;
+            --orange-500: #f97316;
+            --orange-600: #ea580c;
+            
+            --red-50: #fef2f2;
+            --red-500: #ef4444;
+            --red-600: #dc2626;
+            
+            --radius: 8px;
+            --radius-lg: 12px;
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background-color: var(--gray-50);
+            color: var(--gray-900);
+            line-height: 1.6;
+            font-size: 14px;
+        }
+
+        .dashboard {
+            min-height: 100vh;
+        }
+
+        .header {
+            background: white;
+            border-bottom: 1px solid var(--gray-200);
+            padding: 1.5rem 0;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-title {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .header h1 {
+            color: var(--gray-900);
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .header-subtitle {
+            color: var(--gray-500);
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .connection-badge {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.375rem 0.75rem;
+            border-radius: var(--radius);
+            font-size: 0.75rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.025em;
+        }
+
+        .connection-badge.connected {
+            background-color: var(--green-50);
+            color: var(--green-600);
+        }
+
+        .connection-badge.connecting {
+            background-color: var(--orange-50);
+            color: var(--orange-600);
+        }
+
+        .connection-badge.disconnected {
+            background-color: var(--red-50);
+            color: var(--red-600);
+        }
+
+        .connection-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        .connection-dot.connected {
+            background-color: var(--green-500);
+        }
+
+        .connection-dot.connecting {
+            background-color: var(--orange-500);
+        }
+
+        .connection-dot.disconnected {
+            background-color: var(--red-500);
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        .main {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem 1.5rem;
+        }
+
+        .controls-section {
+            margin-bottom: 2rem;
+        }
+
+        .controls-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .controls-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--gray-900);
+        }
+
+        .refresh-button {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background-color: var(--primary-600);
+            color: white;
+            border: none;
+            border-radius: var(--radius);
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .refresh-button:hover {
+            background-color: var(--primary-700);
+        }
+
+        .controls-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1rem;
+            background: white;
+            border: 1px solid var(--gray-200);
+            border-radius: var(--radius-lg);
+            padding: 1.5rem;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .control-label {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--gray-700);
+        }
+
+        .control-input {
+            padding: 0.5rem 0.75rem;
+            border: 1px solid var(--gray-300);
+            border-radius: var(--radius);
+            font-size: 0.875rem;
+            background: white;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .control-input:focus {
+            outline: none;
+            border-color: var(--primary-500);
+            box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
+        }
+
+        .stats-section {
+            margin-bottom: 2rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .stat-card {
+            background: white;
+            border: 1px solid var(--gray-200);
+            border-radius: var(--radius-lg);
+            padding: 1.5rem;
+            box-shadow: var(--shadow-sm);
+            transition: box-shadow 0.2s;
+        }
+
+        .stat-card:hover {
+            box-shadow: var(--shadow);
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--gray-900);
+            line-height: 1;
+        }
+
+        .stat-label {
+            font-size: 0.875rem;
+            color: var(--gray-500);
+            margin-top: 0.5rem;
+        }
+
+        .stat-meta {
+            font-size: 0.75rem;
+            color: var(--gray-400);
+            margin-top: 0.25rem;
+        }
+
+        .contexts-section {
+            margin-bottom: 2rem;
+        }
+
+        .contexts-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .contexts-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--gray-900);
+        }
+
+        .search-input {
+            flex: 1;
+            max-width: 400px;
+            padding: 0.5rem 0.75rem 0.5rem 2.5rem;
+            border: 1px solid var(--gray-300);
+            border-radius: var(--radius);
+            font-size: 0.875rem;
+            background: white url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="%2394a3b8"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>') no-repeat 0.75rem center;
+            background-size: 1rem;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--primary-500);
+            box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
+        }
+
+        .contexts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .context-card {
+            background: white;
+            border: 1px solid var(--gray-200);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            transition: all 0.2s;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .context-card:hover {
+            box-shadow: var(--shadow-md);
+            transform: translateY(-1px);
+        }
+
+        .context-card.new {
+            border-left: 4px solid var(--green-500);
+            animation: slideIn 0.5s ease;
+        }
+
+        .context-card.updated {
+            border-left: 4px solid var(--orange-500);
+            animation: slideIn 0.5s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .context-header {
+            padding: 1.25rem 1.25rem 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 1rem;
+        }
+
+        .context-id {
+            font-weight: 600;
+            color: var(--gray-900);
+            font-size: 0.875rem;
+            word-break: break-all;
+            flex: 1;
+            font-family: 'SF Mono', Monaco, Inconsolata, 'Roboto Mono', monospace;
+        }
+
+        .context-type-badge {
+            background: var(--primary-100);
+            color: var(--primary-700);
+            padding: 0.25rem 0.625rem;
+            border-radius: var(--radius);
+            font-size: 0.75rem;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+
+        .context-body {
+            padding: 0 1.25rem 1.25rem;
+        }
+
+        .context-namespace {
+            color: var(--gray-500);
+            font-size: 0.75rem;
+            margin-bottom: 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.375rem;
+        }
+
+        .context-text {
+            color: var(--gray-700);
+            font-size: 0.875rem;
+            line-height: 1.5;
+            margin-bottom: 1rem;
+            padding: 0.75rem;
+            background: var(--gray-50);
+            border-radius: var(--radius);
+            border-left: 3px solid var(--gray-200);
+            max-height: 100px;
+            overflow-y: auto;
+        }
+
+        .context-data {
+            background: var(--gray-900);
+            color: var(--gray-100);
+            border-radius: var(--radius);
+            padding: 0.75rem;
+            font-family: 'SF Mono', Monaco, Inconsolata, 'Roboto Mono', monospace;
+            font-size: 0.75rem;
+            line-height: 1.4;
+            max-height: 150px;
+            overflow-y: auto;
+            margin-bottom: 1rem;
+            border: 1px solid var(--gray-200);
+        }
+
+        .context-tags {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-bottom: 1rem;
+        }
+
+        .tag {
+            background: var(--gray-100);
+            color: var(--gray-700);
+            padding: 0.25rem 0.5rem;
+            border-radius: var(--radius);
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .context-meta {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            color: var(--gray-400);
+            padding-top: 0.75rem;
+            border-top: 1px solid var(--gray-100);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+            background: white;
+            border: 1px solid var(--gray-200);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .empty-state-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        .empty-state h3 {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--gray-900);
+            margin-bottom: 0.5rem;
+        }
+
+        .empty-state p {
+            color: var(--gray-500);
+            font-size: 0.875rem;
+        }
+
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 4rem;
+            background: white;
+            border: 1px solid var(--gray-200);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .spinner {
+            width: 32px;
+            height: 32px;
+            border: 3px solid var(--gray-200);
+            border-top: 3px solid var(--primary-500);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: var(--red-50);
+            color: var(--red-600);
+            padding: 1rem;
+            border-radius: var(--radius);
+            margin-bottom: 1.5rem;
+            border: 1px solid var(--red-200);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 1rem;
+                align-items: flex-start;
+            }
+
+            .header-actions {
+                width: 100%;
+                justify-content: space-between;
+            }
+
+            .controls-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .contexts-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .contexts-header {
+                flex-direction: column;
+                gap: 1rem;
+                align-items: stretch;
+            }
+
+            .search-input {
+                max-width: none;
+            }
+
+            .main {
+                padding: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="dashboard-root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useCallback, useMemo } = React;
+
+        function Dashboard() {
+            const [contexts, setContexts] = useState([]);
+            const [loading, setLoading] = useState(true);
+            const [error, setError] = useState(null);
+            const [wsConnection, setWsConnection] = useState('disconnected');
+            const [lastUpdate, setLastUpdate] = useState(null);
+            const [stats, setStats] = useState({ total: 0, namespaces: 0, types: 0 });
+            
+            // Filters
+            const [nameSpaceFilter, setNamespaceFilter] = useState('');
+            const [typeFilter, setTypeFilter] = useState('');
+            const [tagFilter, setTagFilter] = useState('');
+            const [searchQuery, setSearchQuery] = useState('');
+            
+            // Configuration
+            const [serverUrl, setServerUrl] = useState('http://localhost:8000');
+            const [wsUrl, setWsUrl] = useState('ws://localhost:8000');
+            const [clientId] = useState(() => `dashboard_${Date.now()}`);
+
+            const ws = useMemo(() => {
+                let websocket = null;
+                return {
+                    connect: () => {
+                        if (websocket?.readyState === WebSocket.OPEN) return;
+                        
+                        setWsConnection('connecting');
+                        const wsEndpoint = `${wsUrl}/ws/${clientId}`;
+                        console.log('Connecting to WebSocket:', wsEndpoint);
+                        
+                        websocket = new WebSocket(wsEndpoint);
+                        
+                        websocket.onopen = () => {
+                            console.log('WebSocket connected');
+                            setWsConnection('connected');
+                            setError(null);
+                            
+                            // Subscribe to all namespaces
+                            websocket.send(JSON.stringify({
+                                type: 'subscribe',
+                                namespace: '*'
+                            }));
+                        };
+
+                        websocket.onmessage = (event) => {
+                            try {
+                                const message = JSON.parse(event.data);
+                                console.log('Received WebSocket message:', message);
+                                
+                                if (message.type === 'context_update') {
+                                    handleRealtimeUpdate(message);
+                                } else if (message.type === 'subscription_confirmed') {
+                                    console.log('Subscription confirmed for namespace:', message.namespace);
+                                }
+                            } catch (e) {
+                                console.error('Error parsing WebSocket message:', e);
+                            }
+                        };
+
+                        websocket.onclose = (event) => {
+                            console.log('WebSocket disconnected:', event.code, event.reason);
+                            setWsConnection('disconnected');
+                            
+                            // Reconnect after 3 seconds
+                            setTimeout(() => {
+                                if (websocket?.readyState !== WebSocket.OPEN) {
+                                    ws.connect();
+                                }
+                            }, 3000);
+                        };
+
+                        websocket.onerror = (error) => {
+                            console.error('WebSocket error:', error);
+                            setWsConnection('disconnected');
+                            setError('WebSocket connection failed');
+                        };
+                    },
+                    
+                    disconnect: () => {
+                        if (websocket) {
+                            websocket.close();
+                            websocket = null;
+                        }
+                    }
+                };
+            }, [wsUrl, clientId]);
+
+            const handleRealtimeUpdate = useCallback((message) => {
+                const { operation, context } = message;
+                setLastUpdate(new Date().toLocaleTimeString());
+                
+                setContexts(prevContexts => {
+                    const existingIndex = prevContexts.findIndex(c => c.id === context.id);
+                    
+                    if (operation === 'delete') {
+                        return prevContexts.filter(c => c.id !== context.id);
+                    } else if (existingIndex >= 0) {
+                        // Update existing context
+                        const updated = [...prevContexts];
+                        updated[existingIndex] = { ...context, _updateType: 'updated' };
+                        return updated;
+                    } else {
+                        // Add new context
+                        return [{ ...context, _updateType: 'new' }, ...prevContexts];
+                    }
+                });
+            }, []);
+
+            const fetchContexts = useCallback(async () => {
+                try {
+                    setLoading(true);
+                    setError(null);
+                    
+                    const response = await fetch(`${serverUrl}/contexts/query`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            namespaces: nameSpaceFilter ? [nameSpaceFilter] : null,
+                            context_types: typeFilter ? [typeFilter] : null,
+                            tags: tagFilter ? [tagFilter] : null,
+                            limit: 1000,
+                            include_expired: false
+                        })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+
+                    const data = await response.json();
+                    setContexts(data || []);
+                    
+                } catch (err) {
+                    console.error('Error fetching contexts:', err);
+                    setError(`Failed to fetch contexts: ${err.message}`);
+                    setContexts([]);
+                } finally {
+                    setLoading(false);
+                }
+            }, [serverUrl, nameSpaceFilter, typeFilter, tagFilter]);
+
+            // Calculate stats
+            useEffect(() => {
+                const namespaces = new Set(contexts.map(c => c.namespace));
+                const types = new Set(contexts.map(c => c.type));
+                
+                setStats({
+                    total: contexts.length,
+                    namespaces: namespaces.size,
+                    types: types.size
+                });
+            }, [contexts]);
+
+            // Initial load and WebSocket connection
+            useEffect(() => {
+                fetchContexts();
+                ws.connect();
+                
+                return () => {
+                    ws.disconnect();
+                };
+            }, [fetchContexts, ws]);
+
+            // Filter contexts based on search query
+            const filteredContexts = useMemo(() => {
+                if (!searchQuery.trim()) return contexts;
+                
+                const query = searchQuery.toLowerCase();
+                return contexts.filter(context => 
+                    context.id.toLowerCase().includes(query) ||
+                    context.text?.toLowerCase().includes(query) ||
+                    context.namespace.toLowerCase().includes(query) ||
+                    context.tags.some(tag => tag.toLowerCase().includes(query)) ||
+                    JSON.stringify(context.data).toLowerCase().includes(query)
+                );
+            }, [contexts, searchQuery]);
+
+            const formatTimestamp = (timestamp) => {
+                return new Date(timestamp * 1000).toLocaleString();
+            };
+
+            const formatData = (data) => {
+                try {
+                    return JSON.stringify(data, null, 2);
+                } catch {
+                    return String(data);
+                }
+            };
+
+            const getConnectionStatusText = () => {
+                switch (wsConnection) {
+                    case 'connected': return 'Live';
+                    case 'connecting': return 'Connecting';
+                    case 'disconnected': return 'Disconnected';
+                    default: return 'Unknown';
+                }
+            };
+
+            return (
+                <div className="dashboard">
+                    <div className="header">
+                        <div className="header-content">
+                            <div className="header-title">
+                                <div>
+                                    <h1>Episodic Context Store</h1>
+                                    <div className="header-subtitle">
+                                        Real-time dashboard for monitoring context store data
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="header-actions">
+                                <div className={`connection-badge ${wsConnection}`}>
+                                    <div className={`connection-dot ${wsConnection}`}></div>
+                                    {getConnectionStatusText()}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="main">
+                        <div className="controls-section">
+                            <div className="controls-header">
+                                <h2 className="controls-title">Configuration & Filters</h2>
+                                <button className="refresh-button" onClick={fetchContexts}>
+                                    🔄 Refresh Data
+                                </button>
+                            </div>
+                            <div className="controls-grid">
+                                <div className="control-group">
+                                    <label className="control-label">Server URL</label>
+                                    <input
+                                        className="control-input"
+                                        type="text"
+                                        placeholder="http://localhost:8000"
+                                        value={serverUrl}
+                                        onChange={(e) => setServerUrl(e.target.value)}
+                                    />
+                                </div>
+                                <div className="control-group">
+                                    <label className="control-label">WebSocket URL</label>
+                                    <input
+                                        className="control-input"
+                                        type="text"
+                                        placeholder="ws://localhost:8000"
+                                        value={wsUrl}
+                                        onChange={(e) => setWsUrl(e.target.value)}
+                                    />
+                                </div>
+                                <div className="control-group">
+                                    <label className="control-label">Namespace Filter</label>
+                                    <input
+                                        className="control-input"
+                                        type="text"
+                                        placeholder="Enter namespace..."
+                                        value={nameSpaceFilter}
+                                        onChange={(e) => setNamespaceFilter(e.target.value)}
+                                    />
+                                </div>
+                                <div className="control-group">
+                                    <label className="control-label">Type Filter</label>
+                                    <input
+                                        className="control-input"
+                                        type="text"
+                                        placeholder="Enter type..."
+                                        value={typeFilter}
+                                        onChange={(e) => setTypeFilter(e.target.value)}
+                                    />
+                                </div>
+                                <div className="control-group">
+                                    <label className="control-label">Tag Filter</label>
+                                    <input
+                                        className="control-input"
+                                        type="text"
+                                        placeholder="Enter tag..."
+                                        value={tagFilter}
+                                        onChange={(e) => setTagFilter(e.target.value)}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="stats-section">
+                            <div className="stats-grid">
+                                <div className="stat-card">
+                                    <div className="stat-value">{stats.total}</div>
+                                    <div className="stat-label">Total Contexts</div>
+                                    <div className="stat-meta">Active in store</div>
+                                </div>
+                                <div className="stat-card">
+                                    <div className="stat-value">{stats.namespaces}</div>
+                                    <div className="stat-label">Namespaces</div>
+                                    <div className="stat-meta">Unique namespaces</div>
+                                </div>
+                                <div className="stat-card">
+                                    <div className="stat-value">{stats.types}</div>
+                                    <div className="stat-label">Context Types</div>
+                                    <div className="stat-meta">Different types</div>
+                                </div>
+                                {lastUpdate && (
+                                    <div className="stat-card">
+                                        <div className="stat-value" style={{fontSize: '1.125rem'}}>{lastUpdate}</div>
+                                        <div className="stat-label">Last Update</div>
+                                        <div className="stat-meta">Real-time sync</div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {error && (
+                            <div className="error">
+                                ⚠️ {error}
+                            </div>
+                        )}
+
+                        <div className="contexts-section">
+                            <div className="contexts-header">
+                                <h2 className="contexts-title">Contexts ({filteredContexts.length})</h2>
+                                <input
+                                    className="search-input"
+                                    type="text"
+                                    placeholder="Search contexts..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                />
+                            </div>
+
+                            {loading ? (
+                                <div className="loading">
+                                    <div className="spinner"></div>
+                                </div>
+                            ) : filteredContexts.length === 0 ? (
+                                <div className="empty-state">
+                                    <div className="empty-state-icon">📭</div>
+                                    <h3>No contexts found</h3>
+                                    <p>Try adjusting your filters or add some contexts to the store</p>
+                                </div>
+                            ) : (
+                                <div className="contexts-grid">
+                                    {filteredContexts.map((context) => (
+                                        <div key={context.id} className={`context-card ${context._updateType || ''}`}>
+                                            <div className="context-header">
+                                                <div className="context-id">{context.id}</div>
+                                                <div className="context-type-badge">{context.type}</div>
+                                            </div>
+                                            
+                                            <div className="context-body">
+                                                <div className="context-namespace">
+                                                    📁 {context.namespace}
+                                                </div>
+                                                
+                                                {context.text && (
+                                                    <div className="context-text">
+                                                        {context.text}
+                                                    </div>
+                                                )}
+                                                
+                                                <div className="context-data">
+                                                    {formatData(context.data)}
+                                                </div>
+                                                
+                                                {context.tags && context.tags.length > 0 && (
+                                                    <div className="context-tags">
+                                                        {context.tags.map((tag, idx) => (
+                                                            <span key={idx} className="tag">#{tag}</span>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                                
+                                                <div className="context-meta">
+                                                    <span>Created: {formatTimestamp(context.created_at)}</span>
+                                                    <span>Updated: {formatTimestamp(context.updated_at)}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.render(<Dashboard />, document.getElementById('dashboard-root'));
+    </script>
+</body>
+</html> 
